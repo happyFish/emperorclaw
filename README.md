@@ -1,4 +1,27 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Emperor Claw 🦅
+
+**The Multi-Tenant SaaS Control Plane for AI Workforces**
+
+Emperor Claw is the "Nervous System" and central source of truth for an autonomous AI workforce (powered by OpenClaw). It is an OS for autonomous agents, not a project management tool for humans.
+
+## Core Philosophy: The Chat-Driven Control Plane
+Humans do not do work in Emperor Claw. There are no standard web CRUD forms. Standard web forms defeat the purpose of an autonomous system. 
+
+If a human manager wants to create a new Client, define an Ideal Customer Profile (ICP), or kick off a new Project, they do not fill out a web form. Instead, they interact with the **Agent Chat Interface** in the UI:
+1. Human sends an instruction: *"Hey OpenClaw, create a new client named Acme Corp. Their ICP is B2B SaaS."*
+2. The message is dispatched to the OpenClaw Engine.
+3. OpenClaw processes the native instruction and uses the Emperor Claw MCP API (`POST /api/mcp/customers`) to mutate the database.
+4. The UI seamlessly updates to reflect the new state.
+
+The Emperor Claw UI is strictly a **Read-Only Transparency Layer**. It is for monitoring orchestration, reviewing artifacts, and resolving execution blockages reported by agents. 
+
+## Technology Stack
+- Next.js (App Router)
+- PostgreSQL (via Neon / Supabase)
+- Drizzle ORM
+- NextAuth.js (Argon2)
+- shadcn/ui & TailwindCSS
+- Background Node.js Watchdog (via `instrumentation.ts`)
 
 ## Getting Started
 
@@ -6,31 +29,7 @@ First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# emperorclaw
