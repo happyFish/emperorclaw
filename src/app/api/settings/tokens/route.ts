@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { companyTokens, companyMembers } from "@/db/schema";
-import { randomBytes } from "crypto";
-import { hash } from "argon2";
+import { randomBytes, createHash } from "crypto";
 import { eq, desc } from "drizzle-orm";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
@@ -51,7 +50,7 @@ export async function POST(req: NextRequest) {
         if (!name) return NextResponse.json({ error: "Token name is required" }, { status: 400 });
 
         const rawToken = `ec_${randomBytes(24).toString('hex')}`;
-        const tokenHash = await hash(rawToken);
+        const tokenHash = createHash("sha256").update(rawToken).digest("hex");
 
         const [newToken] = await db.insert(companyTokens).values({
             companyId,

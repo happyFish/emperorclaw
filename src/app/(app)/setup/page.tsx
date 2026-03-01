@@ -9,7 +9,7 @@ export default function SetupPage() {
                 <h2 className="text-3xl font-bold tracking-tight text-white mb-6">OpenClaw Integration</h2>
             </div>
             <p className="text-zinc-400 mb-8">
-                Connect your OpenClaw agent to the Emperor Claw Control Plane by installing the official Emperor Claw skill.
+                Connect your OpenClaw agent to the Emperor Claw Control Plane by installing the official Emperor Claw OS skill.
                 Once installed, the skill will automatically configure the endpoint URLs and authentication required to retrieve tasks and synchronize chat.
             </p>
 
@@ -24,7 +24,7 @@ export default function SetupPage() {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Download className="w-5 h-5 text-indigo-400" />
-                                Add the Emperor Claw Skill
+                                Add the Emperor Claw OS Skill
                             </CardTitle>
                             <CardDescription className="text-zinc-400">
                                 Run this command in your OpenClaw environment to install the required capabilities.
@@ -37,7 +37,7 @@ export default function SetupPage() {
                                 </pre>
                             </div>
                             <p className="text-sm text-zinc-400">
-                                This will download the <code className="text-indigo-400 px-1 py-0.5 rounded bg-indigo-500/10">SKILL.md</code> which automatically routes all MCP requests to the correct Emperor Claw backend endpoint.
+                                This will download the <code className="text-indigo-400 px-1 py-0.5 rounded bg-indigo-500/10">SKILL.md</code> for Emperor Claw OS, which automatically routes all MCP requests to the correct backend endpoint.
                             </p>
                         </CardContent>
                     </Card>
@@ -62,9 +62,13 @@ export default function SetupPage() {
                                 <pre className="text-sm font-mono text-zinc-300">
                                     {`# Required: Get your Company Token from the API Access page
 EMPEROR_CLAW_API_TOKEN=your_token_here
-
-# Optional: Override the target URL for local testing (Default: https://emperorclaw.malecu.eu)
-# EMPEROR_CLAW_URL=http://localhost:3000`}
+`}
+                                </pre>
+                            </div>
+                            <div className="bg-zinc-900 p-4 rounded-md border border-zinc-800 overflow-x-auto">
+                                <pre className="text-sm font-mono text-zinc-300">
+                                    {`# All MCP calls must include:
+Authorization: Bearer $EMPEROR_CLAW_API_TOKEN`}
                                 </pre>
                             </div>
                             <p className="text-sm text-zinc-400 mt-4">

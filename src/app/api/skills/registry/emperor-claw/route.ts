@@ -4,8 +4,8 @@ import path from "path";
 
 export async function GET() {
     try {
-        // Read the SKILL.md file from the root directory
-        const filePath = path.join(process.cwd(), "SKILL.md");
+        // Read the SKILL.md file from the ClawHub package directory
+        const filePath = path.join(process.cwd(), "clawhub", "emperor-claw-os", "SKILL.md");
         const fileContent = fs.readFileSync(filePath, "utf-8");
 
         return new NextResponse(fileContent, {
