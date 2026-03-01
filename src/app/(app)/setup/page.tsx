@@ -33,7 +33,7 @@ export default function SetupPage() {
                         <CardContent className="space-y-4">
                             <div className="bg-zinc-900 p-4 rounded-md border border-zinc-800 overflow-x-auto">
                                 <pre className="text-sm font-mono text-zinc-300">
-                                    {`openclaw install https://emperorclaw.app/api/skills/registry/emperor-claw`}
+                                    {`openclaw install https://emperorclaw.malecu.eu/api/skills/registry/emperor-claw`}
                                 </pre>
                             </div>
                             <p className="text-sm text-zinc-400">
@@ -63,7 +63,7 @@ export default function SetupPage() {
                                     {`# Required: Get your Company Token from the API Access page
 EMPEROR_CLAW_API_TOKEN=your_token_here
 
-# Optional: Override the target URL for local testing (Default: https://emperorclaw.app)
+# Optional: Override the target URL for local testing (Default: https://emperorclaw.malecu.eu)
 # EMPEROR_CLAW_URL=http://localhost:3000`}
                                 </pre>
                             </div>

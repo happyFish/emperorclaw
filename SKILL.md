@@ -65,7 +65,7 @@ OpenClaw instances must connect to the Emperor Claw Control Plane via the standa
 
 ### 3.1 Network Endpoint
 The production Emperor Claw Control Plane is hosted at:
-**`https://malecu.eu/`**
+**`https://emperorclaw.malecu.eu`**
 
 ### 3.2 Authentication
 All requests from OpenClaw to Emperor Claw MUST include the company token in the Authorization header:
