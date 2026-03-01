@@ -1,0 +1,199 @@
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { db } from "@/db";
+import { agents, tasks, incidents, chatMessages } from "@/db/schema";
+import { eq, inArray, and, sql, desc } from "drizzle-orm";
+import { AgentTeamChat } from "@/components/agent-team-chat";
+import { getCompanyId } from "@/lib/auth";
+import { redirect } from "next/navigation";
+
+export const dynamic = "force-dynamic";
+
+export default async function DashboardPage() {
+  const companyId = await getCompanyId();
+  if (!companyId) redirect("/login");
+
+  // 1. Top Level KPIs
+  const [{ count: totalAgents }] = await db.select({ count: sql<number>`count(*)` }).from(agents).where(eq(agents.companyId, companyId));
+  const [{ count: queuedTasks }] = await db.select({ count: sql<number>`count(*)` }).from(tasks).where(and(eq(tasks.companyId, companyId), eq(tasks.state, 'queued')));
+  const [{ count: needsReview }] = await db.select({ count: sql<number>`count(*)` }).from(tasks).where(and(eq(tasks.companyId, companyId), eq(tasks.state, 'review')));
+  const [{ count: slaBreaches }] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(and(eq(incidents.companyId, companyId), eq(incidents.status, 'open')));
+
+  // 2. Incident List
+  const recentIncidents = await db.select().from(incidents).where(eq(incidents.companyId, companyId)).orderBy(incidents.createdAt).limit(3);
+
+  // 3. Workforce Health / Agent Load
+  const allAgents = await db.select().from(agents).where(eq(agents.companyId, companyId));
+  const activeTasks = await db.select().from(tasks).where(and(eq(tasks.companyId, companyId), inArray(tasks.state, ['in_progress', 'review'])));
+
+  const agentWorkload = allAgents.map(agent => {
+    const assignedTasks = activeTasks.filter(t => t.assignedAgentId === agent.id && t.state === 'in_progress');
+    const assignedReview = activeTasks.filter(t => t.assignedAgentId === agent.id && t.state === 'review');
+    const loadPercent = agent.concurrencyLimit > 0
+      ? Math.round((assignedTasks.length / agent.concurrencyLimit) * 100)
+      : 0;
+
+    return {
+      name: agent.name,
+      online: agent.status === 'online',
+      load: Math.min(loadPercent, 100),
+      workingOn: assignedTasks,
+      reviewing: assignedReview
+    };
+  });
+
+  // 4. Agent Team Chat Feed
+  const recentMessages = await db.select()
+    .from(chatMessages)
+    .where(eq(chatMessages.companyId, companyId))
+    .orderBy(desc(chatMessages.createdAt))
+    .limit(50);
+
+  const reverseMessages = [...recentMessages].reverse();
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col space-y-2">
+        <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">Control Plane</h1>
+        <p className="text-zinc-500 font-medium">System overview and active workforce telemetry.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <KpiCard title="Total Agents" value={totalAgents.toString()} trend="Live" trendLabel="registered" />
+        <KpiCard title="Tasks Queued" value={queuedTasks.toString()} trend="Live" trendLabel="awaiting assignment" />
+        <KpiCard title="Needs Review" value={needsReview.toString()} trend="Live" trendLabel="requires human action" alert={needsReview > 0} />
+        <KpiCard title="SLA Breaches" value={slaBreaches.toString()} trend="Live" trendLabel="open incidents" alert={slaBreaches > 0} good={slaBreaches === 0} />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+        <div className="col-span-2 space-y-4">
+          <h2 className="text-lg font-medium text-zinc-200">Recent Incidents</h2>
+          <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-xl overflow-hidden shadow-sm">
+            <div className="divide-y divide-zinc-800/50">
+              {recentIncidents.length === 0 ? (
+                <div className="p-4 text-sm text-zinc-500 text-center">No recent incidents. System operating normally.</div>
+              ) : (
+                recentIncidents.map(inc => (
+                  <IncidentRow
+                    key={inc.id}
+                    severity={inc.severity}
+                    title={inc.summary}
+                    time={new Date(inc.createdAt).toLocaleTimeString()}
+                    status={inc.status}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h2 className="text-lg font-medium text-zinc-200">Workforce Health</h2>
+          <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-xl p-5 space-y-5 shadow-sm max-h-[400px] overflow-y-auto">
+            {agentWorkload.length === 0 ? (
+              <div className="text-sm text-zinc-500 text-center">No agents registered.</div>
+            ) : (
+              agentWorkload.map(aw => (
+                <HealthItem
+                  key={aw.name}
+                  name={aw.name}
+                  load={aw.load}
+                  online={aw.online}
+                  warning={aw.load >= 90}
+                  workingOn={aw.workingOn}
+                />
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 pt-4 pb-12">
+        <div className="space-y-4">
+          <h2 className="text-lg font-medium text-zinc-200">Live Agent Operations</h2>
+          <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-xl overflow-hidden shadow-sm h-[400px]">
+            <AgentTeamChat initialMessages={reverseMessages} agents={allAgents} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function KpiCard({ title, value, trend, trendLabel, alert, good }: { title: string, value: string, trend: string, trendLabel: string, alert?: boolean, good?: boolean }) {
+  return (
+    <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-xl p-5 shadow-sm flex flex-col justify-between h-36 relative overflow-hidden group hover:border-zinc-700/50 transition-colors">
+      {alert && <div className="absolute top-0 right-0 w-16 h-16 bg-red-500/10 rounded-bl-full blur-xl" />}
+      {good && <div className="absolute top-0 right-0 w-16 h-16 bg-indigo-500/10 rounded-bl-full blur-xl" />}
+      <div className="text-sm font-medium text-zinc-500">{title}</div>
+      <div>
+        <div className="text-3xl font-semibold text-zinc-100 mt-2">{value}</div>
+        <div className="text-xs mt-2 flex items-center space-x-1">
+          <span className={alert ? "text-red-400" : good ? "text-indigo-400" : "text-zinc-300"}>{trend}</span>
+          <span className="text-zinc-600">{trendLabel}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function IncidentRow({ severity, title, time, status }: { severity: string, title: string, time: string, status: string }) {
+  const colors = {
+    high: "bg-red-500/20 text-red-400 border-red-500/30",
+    medium: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+    low: "bg-zinc-500/20 text-zinc-300 border-zinc-500/30"
+  }[severity] || "bg-zinc-500/20 text-zinc-300";
+
+  return (
+    <div className="p-4 flex items-center justify-between hover:bg-zinc-800/30 transition-colors group cursor-pointer">
+      <div className="flex items-center space-x-4">
+        <div className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded border ${colors}`}>
+          {severity}
+        </div>
+        <div className="text-sm font-medium text-zinc-300 group-hover:text-zinc-100 transition-colors">{title}</div>
+      </div>
+      <div className="flex items-center space-x-4">
+        <div className="text-xs text-zinc-500">{time}</div>
+        {status === "resolved" && <div className="text-xs text-zinc-600 font-medium">Resolved</div>}
+      </div>
+    </div>
+  );
+}
+
+function HealthItem({ name, load, online, warning, workingOn }: { name: string, load: number, online: boolean, warning?: boolean, workingOn?: any[] }) {
+  return (
+    <div className="flex flex-col space-y-2">
+      <div className="flex justify-between items-center text-sm">
+        <div className="flex items-center space-x-2">
+          <div className={`w-2 h-2 rounded-full ${online ? (warning ? 'bg-amber-400' : 'bg-emerald-400') : 'bg-zinc-600'}`} />
+          <span className="font-medium text-zinc-300">{name}</span>
+        </div>
+        <span className="text-zinc-500 tracking-tight font-mono text-xs">{load}% load</span>
+      </div>
+      <div className="h-1.5 w-full bg-zinc-800/80 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-1000 ${!online ? 'bg-zinc-700' : warning ? 'bg-amber-500' : 'bg-indigo-500'}`}
+          style={{ width: `${load}%` }}
+        />
+      </div>
+
+      {/* Show active tasks details */}
+      <div className="pt-1">
+        {workingOn && workingOn.length > 0 ? (
+          <div className="space-y-1">
+            {workingOn.map((t: any) => (
+              <div key={t.id} className="text-[10px] font-mono text-zinc-500 flex items-center space-x-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500/50 pulse" />
+                <span className="truncate">Working on: TASK-{t.id.substring(0, 8)} ({t.taskType})</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-[10px] font-mono text-zinc-600 flex items-center space-x-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
+            <span>Idle / Available</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

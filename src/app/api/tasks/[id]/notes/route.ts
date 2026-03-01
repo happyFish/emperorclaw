@@ -1,0 +1,32 @@
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/db";
+import { taskEvents, tasks } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
+
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    try {
+        const resolvedParams = await params;
+        const taskId = resolvedParams.id;
+        const body = await req.json();
+        const { comment } = body;
+
+        if (!comment) return NextResponse.json({ error: "comment is required" }, { status: 400 });
+
+        const [task] = await db.select().from(tasks).where(eq(tasks.id, taskId)).limit(1);
+
+        if (!task) return NextResponse.json({ error: "Task not found" }, { status: 404 });
+
+        const [newEvent] = await db.insert(taskEvents).values({
+            companyId: task.companyId,
+            taskId,
+            eventType: "task_note",
+            actorType: "human",
+            payloadJson: { note: comment },
+        }).returning();
+
+        return NextResponse.json({ success: true, event: newEvent });
+    } catch (error) {
+        console.error("Task note error:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+}
