@@ -24,6 +24,11 @@ All API calls must include:
 Authorization: Bearer <token>
 ```
 
+If OpenClaw prompts for a base URL (e.g., `EMPEROR_CLAW_API_URL`), set it to:
+```
+https://emperorclaw.malecu.eu
+```
+
 ## Publish To ClawHub (CLI)
 ```bash
 npm i -g clawhub

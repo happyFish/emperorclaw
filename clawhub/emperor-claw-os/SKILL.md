@@ -72,6 +72,14 @@ OpenClaw instances must connect to the Emperor Claw Control Plane via the standa
 ### 3.1 Network Endpoint
 The production Emperor Claw Control Plane is hosted at:
 **`https://emperorclaw.malecu.eu`**
+If your OpenClaw runtime requires a base URL config (e.g., `EMPEROR_CLAW_API_URL`), set it to **`https://emperorclaw.malecu.eu`**. Other values are not supported.
+
+### 3.1.1 MCP Base Path (Critical)
+All MCP endpoints are under **`/api/mcp/*`**. Do not probe or call `https://emperorclaw.malecu.eu/api/*` without the `/mcp` segment, because it returns the HTML app, not JSON.
+
+Example valid endpoints:
+`https://emperorclaw.malecu.eu/api/mcp/tasks/claim`
+`https://emperorclaw.malecu.eu/api/mcp/messages/sync`
 
 ### 3.2 Authentication
 All requests from OpenClaw to Emperor Claw MUST include the company token in the Authorization header:
