@@ -3,16 +3,18 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/db";
 import { companies, companyMembers } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import { broadcastMcpEvent } from "@/lib/pubsub";
 
 export async function PATCH(req: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
-        if (!session?.user || !(session.user as any).id) {
+        const sessionUserId = session?.user && "id" in session.user ? session.user.id as string | undefined : undefined;
+        if (!session?.user || !sessionUserId) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const userId = (session.user as any).id;
+        const userId = sessionUserId;
 
         // Verify the user is a member of a company
         const [membership] = await db.select().from(companyMembers)
@@ -30,6 +32,15 @@ export async function PATCH(req: NextRequest) {
             .set({ contextNotes, deletedAt: null }) // Setting deletedAt temporarily to ensure update payload maps cleanly in simple schema update cases
             .where(eq(companies.id, membership.companyId))
             .returning();
+
+        await broadcastMcpEvent(membership.companyId, {
+            type: "company_context_updated",
+            actorUserId: userId,
+            company: {
+                id: updatedCompany.id,
+                contextNotes: updatedCompany.contextNotes,
+            },
+        });
 
         return NextResponse.json({
             message: "Company context updated",

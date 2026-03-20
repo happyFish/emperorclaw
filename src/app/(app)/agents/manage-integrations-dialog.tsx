@@ -1,12 +1,80 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Settings2, Plus, X, Trash2, Key, Mail, ShieldCheck } from "lucide-react";
 import { getAgentIntegrations, saveAgentIntegration, deleteAgentIntegration } from "@/app/actions/integrations";
 
+const PROVIDER_UI: Record<string, {
+    identityLabel: string;
+    identityPlaceholder: string;
+    secretLabel: string;
+    secretPlaceholder: string;
+    hostPlaceholder?: string;
+    description: string;
+}> = {
+    email_smtp: {
+        identityLabel: "Username",
+        identityPlaceholder: "user@example.com",
+        secretLabel: "Password / App Password",
+        secretPlaceholder: "SMTP password or app password",
+        hostPlaceholder: "smtp.gmail.com",
+        description: "Outbound mailbox credentials for this specific agent.",
+    },
+    email_imap: {
+        identityLabel: "Username",
+        identityPlaceholder: "user@example.com",
+        secretLabel: "Password / App Password",
+        secretPlaceholder: "IMAP password or app password",
+        hostPlaceholder: "imap.gmail.com",
+        description: "Inbound mailbox credentials so the agent can read and triage replies.",
+    },
+    github: {
+        identityLabel: "Username / App ID",
+        identityPlaceholder: "octocat or GitHub App ID",
+        secretLabel: "Token",
+        secretPlaceholder: "GitHub personal access token",
+        description: "Stored as a generic GitHub credential payload and leased to OpenClaw on request.",
+    },
+    jira: {
+        identityLabel: "Email / Client ID",
+        identityPlaceholder: "user@company.com",
+        secretLabel: "API Token",
+        secretPlaceholder: "Jira API token",
+        description: "Stored as a generic Jira credential payload and leased to OpenClaw on request.",
+    },
+    linear: {
+        identityLabel: "Workspace / Account",
+        identityPlaceholder: "engineering-team",
+        secretLabel: "API Key",
+        secretPlaceholder: "Linear API key",
+        description: "Stored as a generic Linear credential payload and leased to OpenClaw on request.",
+    },
+    slack: {
+        identityLabel: "Bot User / App ID",
+        identityPlaceholder: "support-bot",
+        secretLabel: "Bot Token / Webhook URL",
+        secretPlaceholder: "xoxb-... or webhook URL",
+        description: "Slack credentials are stored generically; runtime behavior depends on OpenClaw consuming them.",
+    },
+    discord: {
+        identityLabel: "Channel / Bot Name",
+        identityPlaceholder: "support-alerts",
+        secretLabel: "Webhook URL / Bot Token",
+        secretPlaceholder: "Discord webhook URL",
+        description: "Discord credentials are stored generically; runtime behavior depends on OpenClaw consuming them.",
+    },
+    whatsapp: {
+        identityLabel: "Phone Number ID / Client ID",
+        identityPlaceholder: "1234567890",
+        secretLabel: "Access Token",
+        secretPlaceholder: "WhatsApp Business access token",
+        description: "WhatsApp credentials are stored generically; runtime behavior depends on OpenClaw consuming them.",
+    },
+};
+
 export function ManageIntegrationsDialog({ agentId }: { agentId: string }) {
     const [isOpen, setIsOpen] = useState(false);
-    const [integrations, setIntegrations] = useState<any[]>([]);
+    const [integrations, setIntegrations] = useState<Awaited<ReturnType<typeof getAgentIntegrations>>>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -17,7 +85,15 @@ export function ManageIntegrationsDialog({ agentId }: { agentId: string }) {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
 
-    const fetchIntegrations = async () => {
+    const providerUi = PROVIDER_UI[provider] || {
+        identityLabel: "Identifier",
+        identityPlaceholder: "account or client ID",
+        secretLabel: "Secret",
+        secretPlaceholder: "token, password, or webhook URL",
+        description: "This credential will be stored as a generic integration payload for the agent.",
+    };
+
+    const loadIntegrations = useCallback(async () => {
         setIsLoading(true);
         try {
             const data = await getAgentIntegrations(agentId);
@@ -27,13 +103,13 @@ export function ManageIntegrationsDialog({ agentId }: { agentId: string }) {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [agentId]);
 
     useEffect(() => {
         if (isOpen) {
-            fetchIntegrations();
+            void loadIntegrations();
         }
-    }, [isOpen, agentId]);
+    }, [isOpen, loadIntegrations]);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -44,14 +120,14 @@ export function ManageIntegrationsDialog({ agentId }: { agentId: string }) {
                 provider,
                 name,
                 configJson: { host, port, username },
-                secretJson: { password }
+                secretJson: { password },
             });
             setName("");
             setHost("");
             setPort("");
             setUsername("");
             setPassword("");
-            await fetchIntegrations();
+            await loadIntegrations();
         } catch (error) {
             console.error("Failed to save integration", error);
         } finally {
@@ -63,10 +139,16 @@ export function ManageIntegrationsDialog({ agentId }: { agentId: string }) {
         if (!confirm("Are you sure you want to delete this integration?")) return;
         try {
             await deleteAgentIntegration(id);
-            await fetchIntegrations();
+            await loadIntegrations();
         } catch (error) {
             console.error("Failed to delete integration", error);
         }
+    };
+
+    const getConfigUsername = (configJson: unknown) => {
+        if (!configJson || typeof configJson !== "object") return null;
+        const username = (configJson as Record<string, unknown>).username;
+        return typeof username === "string" && username.length > 0 ? username : null;
     };
 
     return (
@@ -108,7 +190,9 @@ export function ManageIntegrationsDialog({ agentId }: { agentId: string }) {
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 gap-3">
-                                        {integrations.map((integration) => (
+                                        {integrations.map((integration) => {
+                                            const configUsername = getConfigUsername(integration.configJson);
+                                            return (
                                             <div key={integration.id} className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex items-center justify-between group">
                                                 <div className="flex items-center space-x-3">
                                                     <div className="p-2 bg-zinc-800 rounded-lg">
@@ -118,12 +202,12 @@ export function ManageIntegrationsDialog({ agentId }: { agentId: string }) {
                                                         <div className="text-sm font-medium text-zinc-200">{integration.name}</div>
                                                         <div className="flex items-center space-x-2">
                                                             <div className="text-[10px] uppercase font-bold tracking-wider text-zinc-500">{integration.provider}</div>
-                                                            <span className="text-zinc-700 text-[10px]">•</span>
+                                                            <span className="text-zinc-700 text-[10px]">*</span>
                                                             <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-500">{integration.ownership}</span>
-                                                            {integration.configJson?.username && (
+                                                            {configUsername && (
                                                                 <>
-                                                                    <span className="text-zinc-700 text-[10px]">•</span>
-                                                                    <span className="text-[10px] text-zinc-400 font-mono">{integration.configJson.username}</span>
+                                                                    <span className="text-zinc-700 text-[10px]">*</span>
+                                                                    <span className="text-[10px] text-zinc-400 font-mono">{configUsername}</span>
                                                                 </>
                                                             )}
                                                         </div>
@@ -137,7 +221,7 @@ export function ManageIntegrationsDialog({ agentId }: { agentId: string }) {
                                                     Remove
                                                 </button>
                                             </div>
-                                        ))}
+                                        )})}
                                     </div>
                                 )}
                             </section>
@@ -184,6 +268,10 @@ export function ManageIntegrationsDialog({ agentId }: { agentId: string }) {
                                         </div>
                                     </div>
 
+                                    <p className="text-[11px] text-zinc-500 leading-relaxed">
+                                        {providerUi.description}
+                                    </p>
+
                                     {(provider === "email_smtp" || provider === "email_imap") && (
                                         <div className="grid grid-cols-3 gap-4">
                                             <div className="col-span-2 space-y-1.5">
@@ -192,7 +280,7 @@ export function ManageIntegrationsDialog({ agentId }: { agentId: string }) {
                                                     type="text"
                                                     value={host}
                                                     onChange={(e) => setHost(e.target.value)}
-                                                    placeholder="smtp.gmail.com"
+                                                    placeholder={providerUi.hostPlaceholder || "smtp.gmail.com"}
                                                     className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-sm text-zinc-300 placeholder:text-zinc-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                                                 />
                                             </div>
@@ -211,23 +299,23 @@ export function ManageIntegrationsDialog({ agentId }: { agentId: string }) {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Username / Client ID</label>
+                                            <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{providerUi.identityLabel}</label>
                                             <input
                                                 type="text"
                                                 value={username}
                                                 onChange={(e) => setUsername(e.target.value)}
-                                                placeholder="user@example.com"
+                                                placeholder={providerUi.identityPlaceholder}
                                                 className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-sm text-zinc-300 placeholder:text-zinc-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                                             />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Secret / Password</label>
+                                            <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{providerUi.secretLabel}</label>
                                             <input
                                                 type="password"
                                                 required
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
-                                                placeholder="••••••••••••"
+                                                placeholder={providerUi.secretPlaceholder}
                                                 className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-sm text-zinc-300 placeholder:text-zinc-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                                             />
                                         </div>

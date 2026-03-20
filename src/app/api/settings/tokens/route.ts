@@ -5,20 +5,22 @@ import { randomBytes, createHash } from "crypto";
 import { eq, desc } from "drizzle-orm";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { broadcastMcpEvent } from "@/lib/pubsub";
 
-async function getUserCompanyId(req: NextRequest) {
+async function getUserCompanyId() {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user || !(session.user as any).id) return null;
+    const sessionUserId = session?.user && "id" in session.user ? session.user.id as string | undefined : undefined;
+    if (!session || !session.user || !sessionUserId) return null;
 
     const [membership] = await db.select().from(companyMembers)
-        .where(eq(companyMembers.userId, (session.user as any).id))
+        .where(eq(companyMembers.userId, sessionUserId))
         .limit(1);
 
     return membership ? membership.companyId : null;
 }
 
-export async function GET(req: NextRequest) {
-    const companyId = await getUserCompanyId(req);
+export async function GET() {
+    const companyId = await getUserCompanyId();
     if (!companyId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     try {
@@ -40,7 +42,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const companyId = await getUserCompanyId(req);
+    const companyId = await getUserCompanyId();
     if (!companyId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     try {
@@ -62,6 +64,11 @@ export async function POST(req: NextRequest) {
             name: companyTokens.name,
             scope: companyTokens.scope,
             createdAt: companyTokens.createdAt,
+        });
+
+        await broadcastMcpEvent(companyId, {
+            type: "company_token_created",
+            token: newToken,
         });
 
         return NextResponse.json({ token: newToken, secret: rawToken }, { status: 201 });

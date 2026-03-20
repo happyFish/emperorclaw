@@ -13,7 +13,7 @@ If a human manager wants to create a new Client, define an Ideal Customer Profil
 3. OpenClaw processes the native instruction and uses the Emperor Claw MCP API (`POST /api/mcp/customers`) to mutate the database.
 4. The UI seamlessly updates to reflect the new state.
 
-The Emperor Claw UI is strictly a **Read-Only Transparency Layer**. It is for monitoring orchestration, reviewing artifacts, and resolving execution blockages reported by agents. 
+The Emperor Claw UI is primarily a **Transparency Layer** for monitoring orchestration, reviewing artifacts, and resolving execution blockages reported by agents. It also includes a small set of operator controls for bootstrapping the workforce and its runtime contract, such as API token generation, agent registration, and per-agent integration or credential management.
 
 ## Technology Stack
 - Next.js (App Router)
