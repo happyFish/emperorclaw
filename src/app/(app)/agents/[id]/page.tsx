@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
-import { ArrowLeft, Bot, Cable, Clock3, KeyRound, MemoryStick, ScrollText } from "lucide-react";
+import { ArrowLeft, Bot, Cable, Clock3, KeyRound, MemoryStick, ScrollText, type LucideIcon } from "lucide-react";
 import { db } from "@/db";
 import {
     actionRuns,
@@ -17,8 +17,18 @@ import { getCompanyId } from "@/lib/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { listAgentIntegrationsForAgent } from "@/lib/agent-integrations";
 import { isMissingSchemaError } from "@/lib/schema-compat";
+import { ManageIntegrationsDialog } from "../manage-integrations-dialog";
+import { AgentDirectChat } from "@/components/agent-direct-chat";
 
 export const dynamic = "force-dynamic";
+
+type MemorySnapshot = typeof agentMemorySnapshots.$inferSelect;
+type MemoryEntry = typeof agentMemoryEntries.$inferSelect;
+type AgentSession = typeof agentSessions.$inferSelect;
+type ActionRun = typeof actionRuns.$inferSelect;
+type ThreadParticipant = typeof threadParticipants.$inferSelect;
+type MessageThread = typeof messageThreads.$inferSelect;
+type ThreadMessage = typeof threadMessages.$inferSelect;
 
 export default async function AgentDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const companyId = await getCompanyId();
@@ -33,13 +43,13 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ id
         redirect("/agents");
     }
 
-    let latestSnapshot: any = null;
-    let memoryEntries: any[] = [];
-    let sessions: any[] = [];
-    let runs: any[] = [];
-    let participants: any[] = [];
-    let threads: any[] = [];
-    let lastMessages: any[] = [];
+    let latestSnapshot: MemorySnapshot | null = null;
+    let memoryEntries: MemoryEntry[] = [];
+    let sessions: AgentSession[] = [];
+    let runs: ActionRun[] = [];
+    let participants: ThreadParticipant[] = [];
+    let threads: MessageThread[] = [];
+    let lastMessages: ThreadMessage[] = [];
 
     try {
         [latestSnapshot] = await db.select().from(agentMemorySnapshots).where(
@@ -83,7 +93,7 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ id
     const latestMessageByThread = lastMessages.reduce((acc, message) => {
         if (!acc[message.threadId]) acc[message.threadId] = message;
         return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, ThreadMessage>);
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
@@ -126,6 +136,7 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ id
             <Tabs defaultValue="memory" className="space-y-6">
                 <TabsList className="bg-zinc-900 border border-zinc-800">
                     <TabsTrigger value="memory">Memory</TabsTrigger>
+                    <TabsTrigger value="chat">Direct Chat</TabsTrigger>
                     <TabsTrigger value="threads">Threads</TabsTrigger>
                     <TabsTrigger value="runs">Runs</TabsTrigger>
                     <TabsTrigger value="integrations">Integrations</TabsTrigger>
@@ -164,6 +175,10 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ id
                             </div>
                         </section>
                     </div>
+                </TabsContent>
+
+                <TabsContent value="chat">
+                    <AgentDirectChat agentId={id} agentName={agent.name} />
                 </TabsContent>
 
                 <TabsContent value="threads">
@@ -236,9 +251,19 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ id
 
                 <TabsContent value="integrations">
                     <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
-                        <div className="flex items-center gap-2 mb-4">
-                            <KeyRound className="w-5 h-5 text-indigo-400" />
-                            <h2 className="text-lg font-medium text-zinc-200">Integrations</h2>
+                        <div className="flex items-start justify-between gap-4 mb-4">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <KeyRound className="w-5 h-5 text-indigo-400" />
+                                    <h2 className="text-lg font-medium text-zinc-200">Integrations</h2>
+                                </div>
+                                <p className="text-xs text-zinc-500 mt-1">
+                                    Credentials are scoped per agent and leased back to OpenClaw when the runtime asks for them.
+                                </p>
+                            </div>
+                            <div className="w-full max-w-[220px]">
+                                <ManageIntegrationsDialog agentId={id} />
+                            </div>
                         </div>
                         <div className="space-y-3">
                             {integrations.length === 0 ? (
@@ -272,7 +297,7 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ id
     );
 }
 
-function MetricCard({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+function MetricCard({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
     return (
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
             <div className="flex items-center gap-2 text-zinc-500 text-xs uppercase tracking-wider font-bold mb-2">
