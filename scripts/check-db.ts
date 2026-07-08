@@ -1,6 +1,6 @@
 import 'dotenv/config';
-import { db } from './src/db';
-import { actionRuns } from './src/db/schema';
+import { db } from '../src/db';
+import { actionRuns } from '../src/db/schema';
 import { count } from 'drizzle-orm';
 
 async function main() {
