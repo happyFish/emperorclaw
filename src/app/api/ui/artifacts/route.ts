@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
             agentId: artifacts.agentId,
             taskId: artifacts.taskId,
             customerName: customers.name,
-            projectGoal: projects.goal,
+            projectGoal: projects.title,
             taskType: tasks.taskType,
         })
             .from(artifacts)

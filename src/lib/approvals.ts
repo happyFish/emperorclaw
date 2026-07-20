@@ -142,7 +142,7 @@ export async function resolveApproval(input: {
 export async function listApprovalsForCompany(companyId: string) {
   const rows = await db.select({
     approval: approvals,
-    projectGoal: projects.goal,
+    projectGoal: projects.title,
   }).from(approvals)
     .innerJoin(projects, eq(projects.id, approvals.projectId))
     .where(eq(approvals.companyId, companyId))

@@ -41,10 +41,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ pr
             return NextResponse.json({ error: "Invalid project status" }, { status: 400 });
         }
 
-        const goal = typeof body.goal === "string" ? body.goal.trim() : existing.goal;
-        if (!goal) {
-            return NextResponse.json({ error: "goal is required" }, { status: 400 });
+        const nextTitle = typeof body.title === "string" ? body.title.trim() : existing.title;
+        if (!nextTitle) {
+            return NextResponse.json({ error: "title is required" }, { status: 400 });
         }
+        const nextDescription = body.description === undefined ? existing.description : (typeof body.description === "string" ? body.description.trim() : null);
+        const nextGoal = body.goal === undefined ? existing.goal : (typeof body.goal === "string" ? body.goal.trim() : null);
         if (!(await validateScopedRelation(companyId, customers, body.customerId))) {
             return NextResponse.json({ error: "Customer not found" }, { status: 404 });
         }
@@ -54,7 +56,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ pr
 
         const [project] = await db.update(projects).set({
             status: nextStatus,
-            goal,
+            title: nextTitle,
+            description: nextDescription,
+            goal: nextGoal,
             customerId: body.customerId === undefined ? existing.customerId : (body.customerId || null),
             leadAgentId: body.leadAgentId === undefined ? existing.leadAgentId : (body.leadAgentId || null),
             requireApprovalForDone: body.requireApprovalForDone === undefined ? existing.requireApprovalForDone : Boolean(body.requireApprovalForDone),

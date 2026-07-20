@@ -24,9 +24,11 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const goal = typeof body.goal === "string" ? body.goal.trim() : "";
-        if (!goal) {
-            return NextResponse.json({ error: "goal is required" }, { status: 400 });
+        const title = typeof body.title === "string" ? body.title.trim() : "";
+        const description = typeof body.description === "string" ? body.description.trim() : undefined;
+        const goal = typeof body.goal === "string" ? body.goal.trim() : undefined;
+        if (!title) {
+            return NextResponse.json({ error: "title is required" }, { status: 400 });
         }
         if (!(await validateScopedRelation(companyId, customers, body.customerId))) {
             return NextResponse.json({ error: "Customer not found" }, { status: 404 });
@@ -40,7 +42,9 @@ export async function POST(req: NextRequest) {
             companyId,
             customerId: body.customerId || null,
             leadAgentId: body.leadAgentId || null,
-            goal,
+            title,
+            description: description || null,
+            goal: goal || null,
             status: body.status || "active",
             requireApprovalForDone: Boolean(body.requireApprovalForDone),
             requireReviewBeforeDone: Boolean(body.requireReviewBeforeDone),

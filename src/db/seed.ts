@@ -129,7 +129,9 @@ async function main() {
         [projectX] = await db.insert(projects).values({
             companyId: acmeCompany.id,
             customerId: customerA.id,
-            goal: "Migrate legacy infrastructure to AWS",
+            title: "AWS Migration",
+            description: "Key enterprise account requesting highly available architecture.",
+            goal: "Migrate legacy infrastructure to AWS with 99.99% uptime",
             status: "active",
         }).returning();
     }

@@ -15,7 +15,7 @@ export default async function ResourcesPage() {
     const [initialResources, customerRows, projectRows, agentRows] = await Promise.all([
         listScopedResources({ companyId }),
         db.select({ id: customers.id, name: customers.name }).from(customers).where(eq(customers.companyId, companyId)),
-        db.select({ id: projects.id, goal: projects.goal }).from(projects).where(and(eq(projects.companyId, companyId), isNull(projects.deletedAt))),
+        db.select({ id: projects.id, title: projects.title }).from(projects).where(and(eq(projects.companyId, companyId), isNull(projects.deletedAt))),
         db.select({ id: agents.id, name: agents.name }).from(agents).where(and(eq(agents.companyId, companyId), isNull(agents.deletedAt))),
     ]);
 
@@ -27,7 +27,7 @@ export default async function ResourcesPage() {
                 secretText: resource.secretText || "",
             }))}
             customers={customerRows}
-            projects={projectRows.map((project) => ({ id: project.id, name: project.goal }))}
+            projects={projectRows.map((project) => ({ id: project.id, name: project.title }))}
             agents={agentRows}
         />
     );

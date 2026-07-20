@@ -111,7 +111,7 @@ export default async function DashboardPage() {
       actorLabel: "Lead",
       actor: project.leadAgentId ? agentNameById.get(project.leadAgentId) || "Lead agent" : "No lead",
       title: `Project ${project.status}`,
-      detail: truncate(project.goal, 120),
+      detail: truncate(project.title, 120),
       time: project.updatedAt,
       tone: project.status === "active" ? "info" : project.status === "completed" ? "good" : "default",
     })),

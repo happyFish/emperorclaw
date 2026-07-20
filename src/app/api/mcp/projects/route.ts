@@ -63,6 +63,8 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const {
             customerId,
+            title,
+            description,
             goal,
             status: projectStatus,
             leadAgentId = null,
@@ -74,15 +76,17 @@ export async function POST(req: NextRequest) {
             maxActiveAgents = 3,
         } = body;
 
-        if (!goal) {
-            return NextResponse.json({ error: "goal is required" }, { status: 400 });
+        if (!title || !title.trim()) {
+            return NextResponse.json({ error: "title is required" }, { status: 400 });
         }
 
         const [project] = await db.insert(projects).values({
             id: randomUUID(),
             companyId,
             customerId: customerId || null,
-            goal,
+            title: title.trim(),
+            description: description || null,
+            goal: goal || null,
             leadAgentId,
             status: projectStatus || "active",
             requireApprovalForDone: Boolean(requireApprovalForDone),

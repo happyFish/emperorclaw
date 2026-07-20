@@ -169,6 +169,13 @@
       "when": 1783900000000,
       "tag": "0023_consolidate-artifact-storage-schema",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1784564541183,
+      "tag": "0024_burly_brood",
+      "breakpoints": true
     }
   ]
 }

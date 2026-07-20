@@ -46,6 +46,8 @@ const getTaskDescription = (task: any) => {
             : null;
 };
 const emptyProjectForm = {
+    title: "",
+    description: "",
     goal: "",
     customerId: "",
     leadAgentId: "",
@@ -187,10 +189,10 @@ export default function ProjectsClient({ initialTasks, projects, agents, custome
             if (!query) return true;
 
             const project = projectItems.find((item) => item.id === task.projectId);
-            const customer = project ? customers.find((item) => item.id === project.customerId) : null;
-            const agent = task.assignedAgentId ? agents.find((item) => item.id === task.assignedAgentId) : null;
-            const input = taskInput(task);
-            return [getTaskTitle(task), input.description, input.goal, task.taskType, task.state, project?.goal, customer?.name, agent?.name, task.templateVersion, task.contractVersion].filter(Boolean).join(" ").toLowerCase().includes(query);
+             const customer = project ? customers.find((item) => item.id === project.customerId) : null;
+             const agent = task.assignedAgentId ? agents.find((item) => item.id === task.assignedAgentId) : null;
+             const input = taskInput(task);
+             return [getTaskTitle(task), input.description, input.goal, task.taskType, task.state, project?.title, project?.description, project?.goal, customer?.name, agent?.name, task.templateVersion, task.contractVersion].filter(Boolean).join(" ").toLowerCase().includes(query);
         });
     }, [agentFilter, customers, tasks, projectFilter, projectItems, searchQuery, agents, customerFilter]);
 
@@ -218,7 +220,7 @@ export default function ProjectsClient({ initialTasks, projects, agents, custome
         ready_to_close: byState.review.filter((task) => reviewBucket(task, isBlocked(task, filteredTasks)) === "ready_to_close").length,
     };
 
-    const getProjectName = (projectId: string) => projectItems.find((project) => project.id === projectId)?.goal || "Unknown Project";
+    const getProjectName = (projectId: string) => projectItems.find((project) => project.id === projectId)?.title || "Unknown Project";
     const getCustomerName = (projectId: string) => {
         const project = projectItems.find((item) => item.id === projectId);
         return project ? customers.find((item) => item.id === project.customerId)?.name || "Unknown Customer" : "Unknown Customer";
@@ -287,7 +289,7 @@ export default function ProjectsClient({ initialTasks, projects, agents, custome
                 const isFinished = project.status === "completed" || project.status === "killed";
                 return {
                     value: project.id,
-                    label: isFinished ? `${project.goal} (${humanizeKey(project.status)})` : project.goal,
+                    label: isFinished ? `${project.title} (${humanizeKey(project.status)})` : project.title,
                     description: project.status === "active" ? customerName : `${customerName} — ${humanizeKey(project.status)}`,
                 };
             }),
@@ -308,6 +310,8 @@ export default function ProjectsClient({ initialTasks, projects, agents, custome
         setMutationError(null);
         setEditingProject(project);
         setProjectForm({
+            title: project.title || "",
+            description: project.description || "",
             goal: project.goal || "",
             customerId: project.customerId || "",
             leadAgentId: project.leadAgentId || "",
@@ -323,7 +327,7 @@ export default function ProjectsClient({ initialTasks, projects, agents, custome
     };
 
     const submitProject = async () => {
-        if (!projectForm.goal.trim()) return;
+        if (!projectForm.title.trim()) return;
         setIsMutating(true);
         setMutationError(null);
         try {
@@ -386,7 +390,7 @@ export default function ProjectsClient({ initialTasks, projects, agents, custome
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Failed to complete project");
             setProjectItems((prev) => prev.map((p) => p.id === project.id ? { ...p, status: "completed" } : p));
-            toast.success(`Project "${project.name || project.goal}" completed.`);
+            toast.success(`Project "${project.title || project.goal}" completed.`);
             router.refresh();
         } catch (error) {
             setMutationError(error instanceof Error ? error.message : "Failed to complete project");
@@ -409,7 +413,7 @@ export default function ProjectsClient({ initialTasks, projects, agents, custome
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Failed to reopen project");
             setProjectItems((prev) => prev.map((p) => p.id === project.id ? { ...p, status: "active" } : p));
-            toast.success(`Project "${project.name || project.goal}" reopened.`);
+            toast.success(`Project "${project.title || project.goal}" reopened.`);
             router.refresh();
         } catch (error) {
             setMutationError(error instanceof Error ? error.message : "Failed to reopen project");
@@ -815,8 +819,16 @@ export default function ProjectsClient({ initialTasks, projects, agents, custome
                     </DialogHeader>
                     <div className="grid gap-4">
                         <label className="space-y-1 text-sm text-zinc-400">
+                            <span>Title</span>
+                            <input value={projectForm.title} onChange={(event) => setProjectForm((prev: any) => ({ ...prev, title: event.target.value }))} className="h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-400" placeholder="Short project name" maxLength={100} />
+                        </label>
+                        <label className="space-y-1 text-sm text-zinc-400">
+                            <span>Description</span>
+                            <textarea value={projectForm.description} onChange={(event) => setProjectForm((prev: any) => ({ ...prev, description: event.target.value }))} className="h-20 w-full rounded-lg border border-zinc-800 bg-zinc-900 p-3 text-sm text-zinc-100 outline-none focus:border-cyan-400" placeholder="Human-readable context for this project" />
+                        </label>
+                        <label className="space-y-1 text-sm text-zinc-400">
                             <span>Goal</span>
-                            <textarea value={projectForm.goal} onChange={(event) => setProjectForm((prev: any) => ({ ...prev, goal: event.target.value }))} className="h-24 w-full rounded-lg border border-zinc-800 bg-zinc-900 p-3 text-sm text-zinc-100 outline-none focus:border-cyan-400" />
+                            <textarea value={projectForm.goal} onChange={(event) => setProjectForm((prev: any) => ({ ...prev, goal: event.target.value }))} className="h-20 w-full rounded-lg border border-zinc-800 bg-zinc-900 p-3 text-sm text-zinc-100 outline-none focus:border-cyan-400" placeholder="Measurable target or success criteria" />
                         </label>
                         <div className="grid gap-3 sm:grid-cols-2">
                             <label className="space-y-1 text-sm text-zinc-400">
@@ -853,7 +865,7 @@ export default function ProjectsClient({ initialTasks, projects, agents, custome
                         </div>
                         <div className="flex justify-end gap-2">
                             <button onClick={() => setProjectDialogMode(null)} className="cursor-pointer rounded-lg border border-zinc-800 px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-900">Cancel</button>
-                            <button onClick={() => void submitProject()} disabled={isMutating || !projectForm.goal.trim()} className="cursor-pointer rounded-lg bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50">{isMutating ? "Saving..." : "Save project"}</button>
+                            <button onClick={() => void submitProject()} disabled={isMutating || !projectForm.title.trim()} className="cursor-pointer rounded-lg bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50">{isMutating ? "Saving..." : "Save project"}</button>
                         </div>
                     </div>
                 </DialogContent>
@@ -870,7 +882,7 @@ export default function ProjectsClient({ initialTasks, projects, agents, custome
                                 <span>Project</span>
                                 <select value={taskForm.projectId} disabled={taskDialogMode === "edit"} onChange={(event) => setTaskForm((prev: any) => ({ ...prev, projectId: event.target.value }))} className="h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-400 disabled:opacity-60">
                                     <option value="">Select project</option>
-                                    {projectItems.map((project) => <option key={project.id} value={project.id}>{project.goal}</option>)}
+                                    {projectItems.map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}
                                 </select>
                             </label>
                             <label className="space-y-1 text-sm text-zinc-400">

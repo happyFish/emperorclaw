@@ -25,6 +25,8 @@ export async function PATCH(
         const body = await req.json();
         const {
             status: newStatus,
+            title,
+            description,
             goal,
             customerId,
             leadAgentId,
@@ -53,7 +55,9 @@ export async function PATCH(
 
         const [project] = await db.update(projects).set({
             status: newStatus ?? existing.status,
-            goal: goal ?? existing.goal,
+            title: title === undefined ? existing.title : (title?.trim() || existing.title),
+            description: description === undefined ? existing.description : (description || null),
+            goal: goal === undefined ? existing.goal : (goal || null),
             customerId: customerId === undefined ? existing.customerId : (customerId || null),
             leadAgentId: leadAgentId === undefined ? existing.leadAgentId : (leadAgentId || null),
             requireApprovalForDone: requireApprovalForDone === undefined ? existing.requireApprovalForDone : Boolean(requireApprovalForDone),

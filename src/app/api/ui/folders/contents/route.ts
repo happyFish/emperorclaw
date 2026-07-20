@@ -104,7 +104,7 @@ export async function GET(req: NextRequest) {
             folderId: artifacts.folderId,
             path: artifacts.path,
             projectId: projects.id,
-            projectGoal: projects.goal,
+            projectGoal: projects.title,
             customerId: artifacts.customerId,
             customerName: customers.name,
             agentId: artifacts.agentId,

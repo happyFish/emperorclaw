@@ -39,7 +39,7 @@ export async function GET() {
 
         const agentList = await db.select({ id: agents.id, name: agents.name }).from(agents)
             .where(and(eq(agents.companyId, companyId), isNull(agents.deletedAt)));
-        const projectList = await db.select({ id: projects.id, goal: projects.goal }).from(projects)
+        const projectList = await db.select({ id: projects.id, title: projects.title }).from(projects)
             .where(and(eq(projects.companyId, companyId), isNull(projects.deletedAt)));
         const customerList = await db.select({ id: customers.id, name: customers.name }).from(customers)
             .where(and(eq(customers.companyId, companyId), isNull(customers.deletedAt)));
@@ -48,7 +48,7 @@ export async function GET() {
             pipelines: pipelineList,
             runs: recentRuns,
             agentsMap: Object.fromEntries(agentList.map(a => [a.id, a.name])),
-            projectsMap: Object.fromEntries(projectList.map(p => [p.id, p.goal])),
+            projectsMap: Object.fromEntries(projectList.map(p => [p.id, p.title])),
             customersMap: Object.fromEntries(customerList.map(c => [c.id, c.name])),
         });
     } catch (error) {

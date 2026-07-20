@@ -46,7 +46,7 @@ export async function GET(
             retentionPolicy: artifacts.retentionPolicy,
             updatedAt: artifacts.updatedAt,
             createdAt: artifacts.createdAt,
-            projectGoal: projects.goal,
+            projectGoal: projects.title,
             customerName: customers.name,
             taskType: tasks.taskType,
         }).from(artifacts)

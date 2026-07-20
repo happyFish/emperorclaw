@@ -32,7 +32,7 @@ export default function ApprovalsClient({ items }: { items: ApprovalItem[] }) {
                 getTaskTitle(item.task),
                 taskInput(item.task).description,
                 item.task?.state,
-                item.project?.goal,
+                item.project?.title,
                 item.customer?.name,
                 item.approval?.status,
                 item.approval?.rationale,
@@ -154,7 +154,7 @@ export default function ApprovalsClient({ items }: { items: ApprovalItem[] }) {
                                         <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em]">
                                             <Chip label={`TASK-${item.task.id.substring(0, 8).toUpperCase()}`} />
                                             <Chip label={item.task.state.replace("_", " ")} tone="slate" />
-                                            <Chip label={item.project?.goal || "Unknown Project"} tone="cyan" />
+                                            <Chip label={item.project?.title || "Unknown Project"} tone="cyan" />
                                             <Chip label={item.customer?.name || "Unknown Customer"} tone="zinc" />
                                             {item.approval?.status && <Chip label={item.approval.status} tone={item.approval.status === "pending" ? "amber" : "emerald"} />}
                                         </div>

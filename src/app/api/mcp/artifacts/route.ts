@@ -139,7 +139,7 @@ export async function GET(req: NextRequest) {
             agentId: artifacts.agentId,
             createdAt: artifacts.createdAt,
             projectId: projects.id,
-            projectGoal: projects.goal,
+            projectGoal: projects.title,
             taskId: tasks.id,
             taskType: tasks.taskType,
         })

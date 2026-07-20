@@ -125,12 +125,13 @@ export async function POST(req: NextRequest) {
 
                 try {
                     const [existingProject] = await db.select({ id: projects.id }).from(projects).where(
-                        and(eq(projects.companyId, companyId), eq(projects.goal, projectGoal), isNull(projects.deletedAt))
+                        and(eq(projects.companyId, companyId), eq(projects.title, projectGoal), isNull(projects.deletedAt))
                     ).limit(1);
 
                     if (!existingProject) {
                         await db.insert(projects).values({
                             companyId,
+                            title: projectGoal,
                             goal: projectGoal,
                             status: "active",
                         });

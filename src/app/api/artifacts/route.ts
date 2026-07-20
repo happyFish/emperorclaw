@@ -37,7 +37,7 @@ export async function GET() {
             isCanonical: artifacts.isCanonical,
             createdAt: artifacts.createdAt,
             projectId: projects.id,
-            projectGoal: projects.goal,
+            projectGoal: projects.title,
             customerId: customers.id,
             customerName: customers.name,
             taskType: tasks.taskType,

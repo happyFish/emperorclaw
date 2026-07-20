@@ -61,7 +61,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         originalFilename: artifacts.originalFilename,
         createdAt: artifacts.createdAt,
         projectId: projects.id,
-        projectGoal: projects.goal,
+        projectGoal: projects.title,
         customerId: customers.id,
         customerName: customers.name,
         taskId: tasks.id,
